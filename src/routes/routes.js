@@ -3,10 +3,10 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
-const { getGitUrl, cloneOrUpdateRepo, git } = require('./utils/gitUtils');
-const { getFiles } = require('./utils/fileUtils');
-const { generateCacheKey, readJSON, writeJSON } = require('./utils/cacheUtils');
-const { compileContent, getFilePaths, compileContentNoHistory } = require('./utils/contentUtils');
+const { getGitUrl, cloneOrUpdateRepo, git } = require('../utils/gitUtils');
+const { getFiles } = require('../utils/fileUtils');
+const { generateCacheKey, readJSON, writeJSON } = require('../utils/cacheUtils');
+const { compileContent, getFilePaths, compileContentNoHistory } = require('../utils/contentUtils');
 
 const CACHE_DIR = path.join(os.tmpdir(), 'git-repo-cache');
 const FILES_PER_PAGE = 10; // Number of files to return per page
