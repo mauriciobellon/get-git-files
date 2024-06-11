@@ -33,17 +33,17 @@ const startServer = async (port) => {
         const server = app.listen(port, '0.0.0.0', async () => {
             console.log(`Server is running on port ${port}`);
 
-            try {
-                const tunnel = await startTunnel({ port: port });
-                if (tunnel && tunnel.getURL) {
-                    const tunnelURL = await tunnel.getURL();
-                    console.log(`Tunnel created at ${tunnelURL}`);
-                } else {
-                    console.error('Failed to retrieve tunnel URL');
-                }
-            } catch (error) {
-                console.error('Error creating tunnel', error);
-            }
+            // try {
+            //     const tunnel = await startTunnel({ port: port });
+            //     if (tunnel && tunnel.getURL) {
+            //         const tunnelURL = await tunnel.getURL();
+            //         console.log(`Tunnel created at ${tunnelURL}`);
+            //     } else {
+            //         console.error('Failed to retrieve tunnel URL');
+            //     }
+            // } catch (error) {
+            //     console.error('Error creating tunnel', error);
+            // }
         });
 
         server.on('error', (err) => {
@@ -59,5 +59,5 @@ const startServer = async (port) => {
     }
 };
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 startServer(PORT);
