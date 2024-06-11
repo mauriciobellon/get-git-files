@@ -11,11 +11,9 @@ const { compileContent, getFilePaths, compileContentNoHistory } = require('./uti
 const CACHE_DIR = path.join(os.tmpdir(), 'git-repo-cache');
 const FILES_PER_PAGE = 10; // Number of files to return per page
 
-
 router.get('/', (req, res) => {
     res.send('Hello from the Git Repo API!');
 });
-
 
 router.post('/', async (req, res) => {
     const { repo, provider = 'github', page = 1, filePath, returnType = 'all', filesPerPage = FILES_PER_PAGE } = req.body;
@@ -56,9 +54,15 @@ router.post('/', async (req, res) => {
         let allFiles = getFiles(localPath);
 
         if (filePath) {
-            allFiles = allFiles.filter(file => path.relative(localPath, file) === filePath);
-            if (allFiles.length === 0) {
-                return res.status(404).send('File not found in repository');
+            const targetPath = path.join(localPath, filePath);
+            const stats = fs.statSync(targetPath);
+            if (stats.isDirectory()) {
+                allFiles = getFiles(targetPath);
+            } else {
+                allFiles = allFiles.filter(file => path.relative(localPath, file) === filePath);
+                if (allFiles.length === 0) {
+                    return res.status(404).send('File not found in repository');
+                }
             }
         }
 
@@ -81,14 +85,12 @@ router.post('/', async (req, res) => {
                 page: usePagination ? currentPage : null,
                 totalPages: usePagination ? Math.ceil(allFiles.length / filesPerPage) : null
             };
-        } else if (returnType === 'nohistory') {
+        } else {
             response = {
                 files: await compileContentNoHistory(files, localPath),
                 page: usePagination ? currentPage : null,
                 totalPages: usePagination ? Math.ceil(allFiles.length / filesPerPage) : null
             };
-        } else {
-            return res.status(400).send('Invalid returnType');
         }
 
         writeJSON(cacheFilePath, response);
