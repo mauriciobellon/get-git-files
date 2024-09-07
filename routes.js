@@ -16,7 +16,7 @@ router.get('/', (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-    const { repo, provider = 'github', page = 1, filePath, returnType = 'all', filesPerPage = FILES_PER_PAGE } = req.body;
+    const { repo, provider = 'github', page = 1, filePath, returnType = 'all', filesPerPage = FILES_PER_PAGE, branch = 'main', useCache = true, excludedPaths = [] } = req.body;
 
     if (!repo) {
         return res.status(400).send('Repository is required');
@@ -35,29 +35,32 @@ router.post('/', async (req, res) => {
     const cacheFilePath = path.join(CACHE_DIR, `${cacheKey}.json`);
 
     try {
-        let useCache = false;
+        let shouldUseCache = useCache && fs.existsSync(cacheFilePath);
 
-        await cloneOrUpdateRepo(repoUrl, localPath);
-
-        if (fs.existsSync(cacheFilePath)) {
+        // If cache is allowed, check if it is valid
+        if (shouldUseCache) {
             const status = await git.cwd(localPath).status();
-            if (status.behind === 0) {
-                useCache = true;
+            if (status.behind > 0) {
+                shouldUseCache = false;
             }
         }
 
-        if (useCache) {
+        // If cache is valid and allowed, return cached data
+        if (shouldUseCache) {
             const cachedData = readJSON(cacheFilePath);
             return res.json(cachedData);
         }
 
-        let allFiles = getFiles(localPath);
+        // Fetch new data and update cache if necessary
+        await cloneOrUpdateRepo(repoUrl, localPath, branch);
+
+        let allFiles = getFiles(localPath, excludedPaths);
 
         if (filePath) {
             const targetPath = path.join(localPath, filePath);
             const stats = fs.statSync(targetPath);
             if (stats.isDirectory()) {
-                allFiles = getFiles(targetPath);
+                allFiles = getFiles(targetPath, excludedPaths);
             } else {
                 allFiles = allFiles.filter(file => path.relative(localPath, file) === filePath);
                 if (allFiles.length === 0) {
@@ -93,13 +96,17 @@ router.post('/', async (req, res) => {
             };
         }
 
-        writeJSON(cacheFilePath, response);
+        // Write to cache if useCache is true
+        if (useCache) {
+            writeJSON(cacheFilePath, response);
+        }
 
         res.json(response);
     } catch (error) {
         console.error(error);
-        res.status(500).send('Error cloning repository');
+        res.status(500).send('Error processing repository');
     }
 });
+
 
 module.exports = router;

@@ -19,17 +19,21 @@ const getGitUrl = (provider, repo) => {
     }
 };
 
-const cloneOrUpdateRepo = async (repoUrl, localPath) => {
+const cloneOrUpdateRepo = async (repoUrl, localPath, branch = 'main') => {
     if (fs.existsSync(localPath)) {
         await git.cwd(localPath).fetch();
         const status = await git.cwd(localPath).status();
         if (status.behind > 0) {
-            await git.cwd(localPath).pull();
+            await git.cwd(localPath).pull('origin', branch);
         }
     } else {
-        await git.clone(repoUrl, localPath);
+        await git.clone(repoUrl, localPath, ['--branch', branch]);
     }
+    
+    // Checkout the specified branch
+    await git.cwd(localPath).checkout(branch);
 };
+
 
 module.exports = {
     isValidGitUrl,
